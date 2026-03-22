@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Think Before You Click - Fun Edition</title>
+<style>
+body {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: linear-gradient(to right, #0f172a, #1e3a8a);
+    color: white;
+    margin: 0; padding: 0;
+    text-align: center;
+    overflow-x: hidden;
+}
+#login-box, #game-box, #leaderboard-box {
+    display: none;
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 15px;
+    width: 60%;
+    margin: 50px auto;
+    box-shadow: 0 0 25px rgba(0,0,0,0.5);
+    animation: fadeIn 1s;
+}
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-20px);}
+    to {opacity:1; transform: translateY(0);}
+}
+button {
+    display: block;
+    margin: 15px auto;
+    padding: 12px;
+    width: 85%;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+button:hover { transform: scale(1.05);}
+.bad { background: #ef4444 !important;}
+.neutral { background: #eab308 !important;}
+.good { background: #22c55e !important;}
+img { max-width: 300px; border-radius: 15px; margin: 15px 0;}
+.confetti {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    overflow:hidden;
+}
+.confetti-piece {
+    position: absolute;
+    width: 10px; height: 10px;
+    background-color: #FFD700;
+    animation: fall 2s linear forwards;
+    opacity: 0.8;
+}
+@keyframes fall {
+    0% {transform: translateY(0) rotate(0deg);}
+    100% {transform: translateY(500px) rotate(360deg);}
+}
+</style>
+</head>
+<body>
+
+<div id="login-box">
+    <h1>Welcome! 👋</h1>
+    <p>Enter your username:</p>
+    <input type="text" id="username" placeholder="Username" />
+    <button onclick="login()">Start Game</button>
+</div>
+
+<div id="game-box">
+    <h2 id="level"></h2>
+    <p id="story"></p>
+    <img id="scenario-img" src="" alt="">
+    <div id="choices"></div>
+    <p id="feedback"></p>
+    <h3>🛡️ Safety Score: <span id="score">0</span></h3>
+</div>
+
+<div id="leaderboard-box">
+    <h2>🏆 Leaderboard</h2>
+    <ol id="leaderboard"></ol>
+    <button onclick="restart()">Play Again</button>
+</div>
+
+<div class="confetti" id="confetti"></div>
+
+<audio id="sound-correct" src="https://freesound.org/data/previews/320/320181_5260873-lq.mp3"></audio>
+<audio id="sound-wrong" src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3"></audio>
+
+<script>
+// ===== LOGIN =====
+let username = '';
+function login() {
+    let input = document.getElementById("username").value.trim();
+    if(!input) { alert("Enter username!"); return; }
+    username = input;
+    document.getElementById("login-box").style.display="none";
+    document.getElementById("game-box").style.display="block";
+    loadGame();
+}
+
+// ===== GAME DATA =====
+let game = [
+{
+    level:"Level 1: Stranger Danger 👤",
+    story:"You receive a friend request from someone you don't know.",
+    img:"https://i.ibb.co/0J7Qk0X/stranger.png",
+    choices:[
+        {text:"Give info", score:-1, feedback:"❌ Don't share info!", type:"bad"},
+        {text:"Ignore", score:0, feedback:"⚠️ Better, but could report.", type:"neutral"},
+        {text:"Report & Block", score:2, feedback:"✅ Great! Safe online.", type:"good"}
+    ]
+},
+{
+    level:"Level 2: Cyberbullying 💬",
+    story:"You see someone being bullied online.",
+    img:"https://i.ibb.co/3vhc4Bh/cyberbullying.png",
+    choices:[
+        {text:"Join bullying", score:-2, feedback:"❌ That hurts others!", type:"bad"},
+        {text:"Stay silent", score:0, feedback:"⚠️ Silence isn't enough.", type:"neutral"},
+        {text:"Defend & Report", score:2, feedback:"✅ Good! Standing up matters.", type:"good"}
+    ]
+},
+{
+    level:"Level 3: Fake News 📰",
+    story:"You find shocking news online.",
+    img:"https://i.ibb.co/yW7FvY3/fakenews.png",
+    choices:[
+        {text:"Share immediately", score:-1, feedback:"❌ Could spread fake news.", type:"bad"},
+        {text:"Ignore", score:0, feedback:"⚠️ Better to check.", type:"neutral"},
+        {text:"Check reliable sources", score:2, feedback:"✅ Excellent!", type:"good"}
+    ]
+},
+{
+    level:"Level 4: Password Safety 🔐",
+    story:"Your friend asks for your account password.",
+    img:"https://i.ibb.co/2nP4Bkc/password.png",
+    choices:[
+        {text:"Share password", score:-2, feedback:"❌ Never share!", type:"bad"},
+        {text:"Say no politely", score:1, feedback:"✅ Good! Safe account.", type:"good"},
+        {text:"Change password immediately", score:2, feedback:"✅ Perfect security!", type:"good"}
+    ]
+}];
+
+let current = 0;
+let score = 0;
+
+// ===== LOAD GAME =====
+function loadGame(){
+    document.getElementById("feedback").innerHTML="";
+    let q = game[current];
+    document.getElementById("level").innerHTML = q.level;
+    document.getElementById("story").innerHTML = q.story;
+    document.getElementById("scenario-img").src = q.img;
+
+    let choicesDiv = document.getElementById("choices");
+    choicesDiv.innerHTML="";
+    q.choices.forEach(c=>{
+        let btn=document.createElement("button");
+        btn.innerHTML=c.text;
+        btn.classList.add(c.type);
+        btn.onclick=()=> selectChoice(c);
+        choicesDiv.appendChild(btn);
+    });
+}
+
+// ===== CHOICE =====
+function selectChoice(choice){
+    score += choice.score;
+    document.getElementById("score").innerHTML = score;
+    document.getElementById("feedback").innerHTML = choice.feedback;
+
+    if(choice.type==="good") { playConfetti(); document.getElementById("sound-correct").play();}
+    if(choice.type==="bad") { document.getElementById("sound-wrong").play();}
+
+    setTimeout(()=>{
+        current++;
+        if(current<game.length){ loadGame();}
+        else{ endGame();}
+    },1500);
+}
+
+// ===== CONFETTI =====
+function playConfetti(){
+    let container = document.getElementById("confetti");
+    for(let i=0;i<30;i++){
+        let piece=document.createElement("div");
+        piece.classList.add("confetti-piece");
+        piece.style.left=Math.random()*window.innerWidth+"px";
+        piece.style.backgroundColor=`hsl(${Math.random()*360},80%,60%)`;
+        container.appendChild(piece);
+        setTimeout(()=> piece.remove(),2000);
+    }
+}
+
+// ===== LEADERBOARD =====
+function endGame(){
+    saveScore(username,score);
+    displayLeaderboard();
+    document.getElementById("game-box").style.display="none";
+    document.getElementById("leaderboard-box").style.display="block";
+}
+
+function saveScore(name,score){
+    let data=JSON.parse(localStorage.getItem("leaderboard")||"[]");
+    data.push({name,score});
+    data.sort((a,b)=>b.score-a.score);
+    localStorage.setItem("leaderboard",JSON.stringify(data.slice(0,5)));
+}
+
+function displayLeaderboard(){
+    let data=JSON.parse(localStorage.getItem("leaderboard")||"[]");
+    let ol=document.getElementById("leaderboard");
+    ol.innerHTML="";
+    data.forEach(d=>{
+        let li=document.createElement("li");
+        li.textContent=`${d.name} - ${d.score}`;
+        ol.appendChild(li);
+    });
+}
+
+// ===== RESTART =====
+function restart(){
+    score=0; current=0;
+    document.getElementById("leaderboard-box").style.display="none";
+    document.getElementById("login-box").style.display="block";
+}
+
+</script>
+</body>
+</html>
