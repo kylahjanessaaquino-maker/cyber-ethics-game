@@ -137,10 +137,7 @@ p.y -= p.speed;
 if(p.y<0){ p.y = height; p.x = random(width); }
 }
 }
-
-// ---------------- CONFETTI ----------------
-function createConfetti(points){
-for(let i=0;i<150;i++){
+et i=0;i<150;i++){
 let col = points===5 ? color(0,255,150) :
           points===3 ? color(255,220,0) :
                        color(255,80,150);
@@ -271,6 +268,9 @@ scene=2;
 }
 }
 }
+// ---------------- CONFETTI ----------------
+function createConfetti(points){
+for(l
 
 // NEXT PLAYER CLICK
 if(scene===2){
